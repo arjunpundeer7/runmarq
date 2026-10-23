@@ -1,0 +1,507 @@
+@import "tailwindcss";
+@import "@runmarq/ui/tokens.css";
+
+@source "../../../packages/ui/src";
+
+/*
+ * The website's palette: warm paper, espresso ink, one terracotta accent.
+ * It overrides the shared tokens for the site only; the desktop app keeps its
+ * neutral set. Selectors mirror tokens.css so they win on order, not weight.
+ */
+:root {
+  --rm-bg: #f9f5f0;
+  --rm-surface: #fffdfa;
+  --rm-surface-2: #f3ece4;
+  --rm-fg: #181412;
+  --rm-fg-2: #40372f;
+  --rm-muted: #74685e;
+  --rm-faint: #a5988c;
+  --rm-border: #ece3d9;
+  --rm-border-strong: #dccfc1;
+  --rm-accent: #c2562f;
+  --rm-accent-muted: #f6e3d7;
+  --rm-accent-text: #a4451f;
+  --rm-ok: #33714c;
+  --rm-ok-muted: #e2eee4;
+  --rm-focus: #c2562f;
+  --rm-shadow: 0 1px 2px rgb(70 40 20 / 0.04), 0 18px 44px -26px rgb(90 50 25 / 0.3);
+  --rm-shadow-float: 0 1px 2px rgb(70 40 20 / 0.05), 0 30px 80px -34px rgb(110 60 30 / 0.38), 0 10px 24px -18px rgb(70 40 20 / 0.14);
+  --rm-silk-1: #efcfba;
+  --rm-silk-2: #e4b69b;
+  --rm-silk-3: #f5e3d6;
+  --rm-silk-sheen: #fff9f4;
+  /* Code and terminals stay dark in both themes. */
+  --rm-code: #1d1714;
+  --rm-code-fg: #f6efe8;
+  --rm-code-edge: transparent;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --rm-bg: #16110e;
+    --rm-surface: #211a16;
+    --rm-surface-2: #1d1713;
+    --rm-fg: #f6efe8;
+    --rm-fg-2: #dcd1c6;
+    --rm-muted: #ab9e92;
+    --rm-faint: #7d7168;
+    --rm-border: #33281f;
+    --rm-border-strong: #45372e;
+    --rm-accent: #e07a52;
+    --rm-accent-muted: #3b261b;
+    --rm-accent-text: #eea07f;
+    --rm-focus: #e07a52;
+    --rm-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 44px -24px rgb(0 0 0 / 0.6);
+    --rm-shadow-float: 0 1px 2px rgb(0 0 0 / 0.3), 0 30px 80px -30px rgb(0 0 0 / 0.75);
+    --rm-silk-1: #2b1c15;
+    --rm-silk-2: #39241a;
+    --rm-silk-3: #1e1611;
+    --rm-silk-sheen: #4a3022;
+    --rm-code: #0d0907;
+    --rm-code-edge: #33281f;
+  }
+}
+
+:root[data-theme="dark"] {
+  --rm-bg: #16110e;
+  --rm-surface: #211a16;
+  --rm-surface-2: #1d1713;
+  --rm-fg: #f6efe8;
+  --rm-fg-2: #dcd1c6;
+  --rm-muted: #ab9e92;
+  --rm-faint: #7d7168;
+  --rm-border: #33281f;
+  --rm-border-strong: #45372e;
+  --rm-accent: #e07a52;
+  --rm-accent-muted: #3b261b;
+  --rm-accent-text: #eea07f;
+  --rm-focus: #e07a52;
+  --rm-shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 18px 44px -24px rgb(0 0 0 / 0.6);
+  --rm-shadow-float: 0 1px 2px rgb(0 0 0 / 0.3), 0 30px 80px -30px rgb(0 0 0 / 0.75);
+  --rm-silk-1: #2b1c15;
+  --rm-silk-2: #39241a;
+  --rm-silk-3: #1e1611;
+  --rm-silk-sheen: #4a3022;
+  --rm-code: #0d0907;
+  --rm-code-edge: #33281f;
+}
+
+/*
+ * Five type steps for the whole site:
+ *   small 14 · body 17 · lead clamp(18–22) · heading clamp(30–56) · display clamp(40–96)
+ */
+@theme {
+  --font-serif: var(--font-newsreader), "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+  --text-display: clamp(2.5rem, min(1rem + 5vw, 0.5rem + 7.6svh), 5.25rem);
+  --text-heading: clamp(1.875rem, 1.2rem + 2.6vw, 3.5rem);
+  --text-lead: clamp(1.125rem, 1rem + 0.45vw, 1.375rem);
+  --text-body: 1.0625rem;
+  --text-small: 0.875rem;
+  --container-site: 1280px;
+  --shadow-float: var(--rm-shadow-float);
+  --color-code: var(--rm-code);
+  --color-code-fg: var(--rm-code-fg);
+  --color-code-edge: var(--rm-code-edge);
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+    scroll-padding-top: 88px;
+  }
+  /*
+   * Large monitors: the layout is drawn for up to ~2000px, so beyond that the
+   * whole page scales up in proportion instead of floating in a sea of margin.
+   */
+  @media (min-width: 2200px) {
+    html {
+      zoom: 1.25;
+    }
+  }
+  @media (min-width: 2500px) {
+    html {
+      zoom: 1.4;
+    }
+  }
+  body {
+    font-family: var(--font-sans);
+    font-size: var(--text-body);
+    line-height: 1.6;
+    overflow-wrap: break-word;
+  }
+  /* Grid and flex children may shrink below their content's intrinsic width. */
+  :where(main, section, article, aside, figure, nav, div) {
+    min-width: 0;
+  }
+  /* Page and section titles are set in the serif; product fragments keep the interface face. */
+  :where(h1, h2):not(:where([data-ui] *)) {
+    font-family: var(--font-serif);
+    font-weight: 500;
+    font-optical-sizing: auto;
+    letter-spacing: -0.025em;
+  }
+  h1,
+  h2,
+  h3 {
+    text-wrap: balance;
+  }
+  p {
+    text-wrap: pretty;
+  }
+}
+
+@layer components {
+  /* Hero spacing follows the screen's height too, so short laptop screens still see the product. */
+  .hero {
+    padding-top: clamp(1.5rem, 4.5svh, 4rem);
+    padding-bottom: clamp(3.5rem, 9svh, 6rem);
+  }
+
+  /* Actions: an ink pill and a quiet outlined pill, nothing else. */
+  .btn {
+    display: inline-flex;
+    height: 3rem;
+    align-items: center;
+    justify-content: center;
+    gap: 0.6rem;
+    border-radius: 999px;
+    padding: 0 1.5rem;
+    font-size: 1rem;
+    font-weight: 500;
+    white-space: nowrap;
+    transition:
+      background-color 160ms ease,
+      color 160ms ease,
+      box-shadow 160ms ease,
+      transform 160ms var(--ease-out-soft);
+  }
+  .btn:active {
+    transform: scale(0.98);
+  }
+  .btn-primary {
+    background: var(--rm-fg);
+    color: var(--rm-bg);
+    box-shadow: 0 8px 20px -12px rgb(24 20 18 / 0.6);
+  }
+  .btn-primary:hover {
+    background: color-mix(in oklab, var(--rm-fg) 86%, var(--rm-accent));
+  }
+  .btn-ghost {
+    background: color-mix(in oklab, var(--rm-surface) 70%, transparent);
+    color: var(--rm-fg);
+    box-shadow: inset 0 0 0 1px var(--rm-border-strong);
+  }
+  .btn-ghost:hover {
+    background: var(--rm-surface);
+    box-shadow: inset 0 0 0 1px var(--rm-faint);
+  }
+  .btn-sm {
+    height: 2.5rem;
+    padding: 0 1.1rem;
+    font-size: 0.9375rem;
+  }
+  .btn .btn-arrow {
+    transition: transform 200ms var(--ease-out-soft);
+  }
+  .btn:hover .btn-arrow {
+    transform: translateX(3px);
+  }
+
+  /* The header sits on the silk at the top of the page and gains a paper backing once it scrolls. */
+  .site-header {
+    background: color-mix(in oklab, var(--rm-bg) 92%, transparent);
+    transition:
+      background-color 240ms ease,
+      box-shadow 240ms ease;
+  }
+  .js .site-header {
+    background: transparent;
+  }
+  [data-scrolled] .site-header {
+    background: color-mix(in oklab, var(--rm-bg) 84%, transparent);
+    box-shadow: 0 1px 0 var(--rm-border);
+    backdrop-filter: blur(14px) saturate(1.2);
+  }
+
+  /* A floating application window: the one surface allowed a deep shadow. */
+  .rm-window {
+    border-radius: 18px;
+    background: var(--rm-surface);
+    box-shadow:
+      0 0 0 1px color-mix(in oklab, var(--rm-border-strong) 70%, transparent),
+      var(--rm-shadow-float);
+  }
+  .rm-window-dot {
+    width: 11px;
+    height: 11px;
+    border-radius: 999px;
+  }
+
+  /* Soft panels that sit on the paper: a tone step plus the faintest edge. */
+  .rm-panel {
+    border-radius: 18px;
+    background: var(--rm-surface);
+    box-shadow:
+      0 0 0 1px var(--rm-border),
+      var(--rm-shadow);
+  }
+
+  /*
+   * The silk backdrop, fixed behind every page. Each layer drifts on its own
+   * long cycle; the sheens breathe a little. Transform and opacity only.
+   */
+  .backdrop {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    overflow: hidden;
+  }
+  .backdrop-layer {
+    position: absolute;
+    inset: -5%;
+    width: 110%;
+    height: 110%;
+    will-change: transform;
+  }
+  .backdrop-left {
+    animation: rm-drift-left 34s ease-in-out infinite alternate;
+  }
+  .backdrop-right {
+    animation: rm-drift-right 41s ease-in-out infinite alternate;
+  }
+  .backdrop-sheen-left {
+    animation:
+      rm-drift-left 34s ease-in-out infinite alternate,
+      rm-sheen 9s ease-in-out infinite alternate;
+  }
+  .backdrop-sheen-right {
+    animation:
+      rm-drift-right 41s ease-in-out infinite alternate,
+      rm-sheen 11s ease-in-out -4s infinite alternate;
+  }
+  /* Keeps the reading column on paper: wide on desktop, nearly the whole page on a phone. */
+  .backdrop-clear {
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+      ellipse 40% 46% at 50% 44%,
+      color-mix(in oklab, var(--rm-bg) 90%, transparent) 0%,
+      color-mix(in oklab, var(--rm-bg) 62%, transparent) 55%,
+      transparent 100%
+    );
+  }
+  .backdrop-grain {
+    position: absolute;
+    inset: 0;
+    opacity: 0.06;
+  }
+  @media (max-width: 767px) {
+    .backdrop-layer {
+      opacity: 0.7;
+    }
+    .backdrop-clear {
+      background: radial-gradient(
+        ellipse 80% 42% at 50% 46%,
+        color-mix(in oklab, var(--rm-bg) 86%, transparent) 0%,
+        color-mix(in oklab, var(--rm-bg) 55%, transparent) 60%,
+        transparent 100%
+      );
+    }
+  }
+  /* On dark paper the folds stay low and need no clearing. */
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .backdrop {
+      opacity: 0.8;
+    }
+    :root:not([data-theme="light"]) .backdrop-clear {
+      display: none;
+    }
+  }
+  :root[data-theme="dark"] .backdrop {
+    opacity: 0.8;
+  }
+  :root[data-theme="dark"] .backdrop-clear {
+    display: none;
+  }
+  @keyframes rm-drift-left {
+    from {
+      transform: translate3d(-1.2%, 0.6%, 0) rotate(-0.6deg);
+    }
+    to {
+      transform: translate3d(1.4%, -1.2%, 0) rotate(0.5deg);
+    }
+  }
+  @keyframes rm-drift-right {
+    from {
+      transform: translate3d(1.2%, -0.8%, 0) rotate(0.5deg);
+    }
+    to {
+      transform: translate3d(-1.4%, 1%, 0) rotate(-0.6deg);
+    }
+  }
+  @keyframes rm-sheen {
+    from {
+      opacity: 0.55;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+
+  /* The activity ring in the hero window. */
+  .rm-spin {
+    animation: rm-spin 1.4s linear infinite;
+    transform-origin: center;
+  }
+  @keyframes rm-spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+}
+
+/* Editorial prose for documentation and policy pages. */
+.prose-rm {
+  font-size: var(--text-body);
+  line-height: 1.7;
+  color: var(--rm-fg);
+  max-width: 68ch;
+  overflow-wrap: anywhere;
+}
+.prose-rm h2 {
+  margin-top: 3.25rem;
+  margin-bottom: 0.75rem;
+  font-size: 1.875rem;
+  line-height: 1.15;
+}
+.prose-rm h3 {
+  margin-top: 2rem;
+  margin-bottom: 0.5rem;
+  font-size: 1.125rem;
+  font-weight: 600;
+}
+.prose-rm p,
+.prose-rm ul,
+.prose-rm ol,
+.prose-rm table {
+  display: block;
+  overflow-x: auto;
+  margin-top: 1rem;
+}
+.prose-rm ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+.prose-rm ol {
+  list-style: decimal;
+  padding-left: 1.25rem;
+}
+.prose-rm li + li {
+  margin-top: 0.4rem;
+}
+.prose-rm a {
+  color: var(--rm-accent-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+}
+.prose-rm :not(pre) > code {
+  font-family: var(--font-mono);
+  font-size: 0.875em;
+  background: var(--rm-surface-2);
+  border-radius: 5px;
+  padding: 0.1em 0.35em;
+}
+.prose-rm strong {
+  font-weight: 600;
+}
+.prose-rm table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: var(--text-small);
+}
+.prose-rm th {
+  text-align: left;
+  font-weight: 500;
+  color: var(--rm-muted);
+}
+.prose-rm th,
+.prose-rm td {
+  padding: 0.55rem 0.75rem 0.55rem 0;
+  border-bottom: 1px solid var(--rm-border);
+  vertical-align: top;
+}
+
+/* Section entrances: content is visible without script; with script it rises once. */
+.js .reveal > * {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 700ms var(--ease-out-soft),
+    transform 700ms var(--ease-out-soft);
+}
+.js .reveal.is-in > * {
+  opacity: 1;
+  transform: none;
+}
+.js .reveal.is-in > *:nth-child(2) {
+  transition-delay: 80ms;
+}
+.js .reveal.is-in > *:nth-child(3) {
+  transition-delay: 160ms;
+}
+.js .reveal.is-in > *:nth-child(n + 4) {
+  transition-delay: 240ms;
+}
+
+/* The signature move: each headline line rises from behind its baseline. */
+.mask-line {
+  display: inline-block;
+  vertical-align: top;
+  overflow: hidden;
+  padding-bottom: 0.08em;
+  margin-bottom: -0.08em;
+}
+.mask-line > span {
+  display: block;
+  animation: rm-line 900ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+.mask-line:nth-child(2) > span {
+  animation-delay: 110ms;
+}
+.after-lines {
+  animation: rm-fade 700ms 380ms var(--ease-out-soft) both;
+}
+@keyframes rm-line {
+  from {
+    transform: translateY(105%);
+  }
+  to {
+    transform: none;
+  }
+}
+@keyframes rm-fade {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .js .reveal > * {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .mask-line > span,
+  .after-lines,
+  .backdrop-layer,
+  .rm-spin {
+    animation: none;
+  }
+}

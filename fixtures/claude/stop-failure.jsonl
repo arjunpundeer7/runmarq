@@ -1,0 +1,2 @@
+{"session_id":"77aa0000-2222-4333-8444-955556666777","prompt_id":"p-201","transcript_path":"/home/dev/.claude/projects/site/77aa.jsonl","cwd":"/home/dev/projects/site","permission_mode":"default","hook_event_name":"UserPromptSubmit","prompt":"Add a dark mode toggle to the settings page"}
+{"session_id":"77aa0000-2222-4333-8444-955556666777","prompt_id":"p-201","transcript_path":"/home/dev/.claude/projects/site/77aa.jsonl","cwd":"/home/dev/projects/site","permission_mode":"default","hook_event_name":"StopFailure","error":"rate_limit","error_details":"429"}

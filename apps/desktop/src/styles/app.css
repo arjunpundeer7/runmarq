@@ -1,0 +1,60 @@
+@import "tailwindcss";
+@import "@runmarq/ui/tokens.css";
+
+@source "../../../../packages/ui/src";
+
+@font-face {
+  font-family: "Geist";
+  src: url("../../node_modules/geist/dist/fonts/geist-sans/Geist-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Geist Mono";
+  src: url("../../node_modules/geist/dist/fonts/geist-mono/GeistMono-Variable.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@layer base {
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+  body {
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    overflow: hidden;
+    user-select: none;
+  }
+  input,
+  textarea,
+  select,
+  .selectable {
+    user-select: text;
+  }
+  body.widget {
+    background: transparent;
+  }
+  button {
+    cursor: default;
+  }
+}
+
+/* Native selects with a quiet chevron. */
+.rm-select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23908d86' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 9px center;
+}
+
+/* Thin, quiet scrollbars. */
+.scroll-quiet {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rm-border-strong) transparent;
+}

@@ -1,0 +1,81 @@
+[workspace]
+resolver = "2"
+members = [
+  "crates/core",
+  "crates/storage",
+  "crates/estimator",
+  "crates/adapters",
+  "crates/collector",
+  "crates/cli",
+  "apps/desktop/src-tauri",
+]
+default-members = [
+  "crates/core",
+  "crates/storage",
+  "crates/estimator",
+  "crates/adapters",
+  "crates/collector",
+  "crates/cli",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+license = "MIT OR Apache-2.0"
+repository = "https://github.com/arjunpundeer7/runmarq"
+rust-version = "1.85"
+publish = false
+
+[workspace.dependencies]
+runmarq-core = { path = "crates/core" }
+runmarq-storage = { path = "crates/storage" }
+runmarq-estimator = { path = "crates/estimator" }
+runmarq-adapters = { path = "crates/adapters" }
+runmarq-collector = { path = "crates/collector" }
+
+anyhow = "1"
+thiserror = "2"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+chrono = { version = "0.4", default-features = false, features = ["clock", "serde", "std"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+tracing = "0.1"
+tracing-subscriber = { version = "0.3", features = ["env-filter", "fmt", "json"] }
+tracing-appender = "0.2"
+tokio = { version = "1", features = ["rt-multi-thread", "macros", "sync", "time", "signal", "net", "process", "io-util"] }
+axum = { version = "0.8", default-features = false, features = ["http1", "json", "tokio", "query"] }
+tower = { version = "0.5", features = ["limit", "timeout"] }
+futures = "0.3"
+tokio-stream = { version = "0.1", features = ["sync"] }
+rusqlite = { version = "0.37", features = ["bundled"] }
+sha2 = "0.10"
+hex = "0.4"
+rand = "0.8"
+dirs = "6"
+fs4 = { version = "0.13", features = ["sync"] }
+clap = { version = "4", features = ["derive"] }
+ureq = { version = "2", default-features = false, features = ["json"] }
+toml_edit = "0.22"
+tempfile = "3"
+which = "7"
+ts-rs = { version = "11", features = ["serde-json-impl", "chrono-impl", "no-serde-warnings"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+strip = "symbols"
+
+# Keep debug builds small: line tables are enough for backtraces, and full
+# debug info for the Tauri dependency tree runs to several gigabytes.
+[profile.dev]
+debug = "line-tables-only"
+
+# The hook path (`runmarq emit`) is latency-sensitive; keep dev builds of deps optimized.
+[profile.dev.package."*"]
+opt-level = 2
+debug = false
+
+# Model fitting is numeric work that is slow unoptimized, even in tests.
+[profile.dev.package.runmarq-estimator]
+opt-level = 2

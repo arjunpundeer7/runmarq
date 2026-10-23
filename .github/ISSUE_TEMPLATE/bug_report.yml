@@ -1,0 +1,54 @@
+name: Bug report
+description: Something in runmarq is not working as expected
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for reporting. Please **never paste prompts, code or tokens**. For security issues, use a private advisory instead (see SECURITY.md).
+  - type: dropdown
+    id: component
+    attributes:
+      label: Component
+      options:
+        - Desktop app
+        - CLI
+        - Collector
+        - Estimator / ETA
+        - Integration (Claude Code)
+        - Integration (Codex)
+        - Integration (Cursor)
+        - Website / docs
+    validations:
+      required: true
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened, and what did you expect?
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. runmarq integrations setup claude
+        2. ...
+  - type: input
+    id: os
+    attributes:
+      label: OS and version
+      placeholder: Windows 11 24H2 / macOS 15 / Ubuntu 24.04
+    validations:
+      required: true
+  - type: input
+    id: agent
+    attributes:
+      label: Agent and version
+      placeholder: Claude Code 2.1.x
+  - type: textarea
+    id: doctor
+    attributes:
+      label: Output of `runmarq doctor --json`
+      description: Review before pasting; remove anything you consider private.
+      render: json

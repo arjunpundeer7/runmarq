@@ -1,0 +1,29 @@
+{
+  "name": "runmarq-monorepo",
+  "private": true,
+  "license": "MIT OR Apache-2.0",
+  "packageManager": "pnpm@9.15.9",
+  "engines": {
+    "node": ">=20.9"
+  },
+  "scripts": {
+    "dev:web": "pnpm --filter @runmarq/web dev",
+    "dev:desktop": "pnpm --filter @runmarq/desktop tauri dev",
+    "build": "turbo run build",
+    "build:web": "pnpm --filter @runmarq/web build",
+    "build:desktop": "node scripts/prepare-sidecar.mjs && pnpm --filter @runmarq/desktop tauri build --config src-tauri/tauri.release.conf.json",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "test:e2e": "pnpm --filter @runmarq/web test:e2e",
+    "contracts": "cargo test -p runmarq-core --quiet && node scripts/gen-contracts.mjs",
+    "rust:test": "cargo test --workspace",
+    "rust:lint": "cargo fmt --all --check && cargo clippy --workspace --all-targets -- -D warnings",
+    "check": "pnpm rust:lint && pnpm rust:test && pnpm typecheck && pnpm lint && pnpm test",
+    "demo": "cargo run -q -p runmarq-collector --example demo_run > apps/web/content/demo-run.json"
+  },
+  "devDependencies": {
+    "turbo": "^2.11.10",
+    "typescript": "5.9.3"
+  }
+}

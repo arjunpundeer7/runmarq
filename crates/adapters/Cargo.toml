@@ -1,0 +1,31 @@
+[package]
+name = "runmarq-adapters"
+description = "Agent integrations: detection, safe hook installation, and event normalization."
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[dependencies]
+runmarq-core.workspace = true
+runmarq-estimator.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+sha2.workspace = true
+hex.workspace = true
+thiserror.workspace = true
+which.workspace = true
+dirs.workspace = true
+tracing.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows-sys = { version = "0.59", features = [
+    "Win32_Storage_FileSystem",
+    "Win32_Foundation",
+    "Win32_System_Registry",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[dev-dependencies]
+tempfile.workspace = true

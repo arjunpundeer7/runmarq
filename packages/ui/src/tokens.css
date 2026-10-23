@@ -1,0 +1,157 @@
+/*
+ * runmarq design tokens, shared by the desktop app and the website.
+ * Mostly neutral; warmth comes from type and a sparingly used accent.
+ * Import after `@import "tailwindcss";`.
+ */
+
+:root {
+  color-scheme: light;
+  --rm-bg: #f8f7f4;
+  --rm-surface: #ffffff;
+  --rm-surface-2: #f2f1ec;
+  --rm-fg: #1c1c1b;
+  --rm-fg-2: #3b3a37;
+  --rm-muted: #706e69;
+  --rm-faint: #9a978f;
+  --rm-border: #e6e4de;
+  --rm-border-strong: #d5d2ca;
+  --rm-accent: #b76545;
+  --rm-accent-muted: #f1e6df;
+  --rm-accent-text: #95502f;
+  --rm-ok: #3d7a55;
+  --rm-ok-muted: #e4eee7;
+  --rm-warn: #9a6513;
+  --rm-warn-muted: #f4ead8;
+  --rm-danger: #b0413a;
+  --rm-danger-muted: #f5e1de;
+  --rm-focus: #b76545;
+  --rm-shadow: 0 1px 1px rgb(28 28 27 / 0.03), 0 10px 30px -16px rgb(28 28 27 / 0.14);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    color-scheme: dark;
+    --rm-bg: #171817;
+    --rm-surface: #222321;
+    --rm-surface-2: #1d1e1c;
+    --rm-fg: #f4f3ef;
+    --rm-fg-2: #d8d6d0;
+    --rm-muted: #aca9a2;
+    --rm-faint: #7d7a74;
+    --rm-border: #383a36;
+    --rm-border-strong: #474943;
+    --rm-accent: #d78b6c;
+    --rm-accent-muted: #3a2a22;
+    --rm-accent-text: #e7a689;
+    --rm-ok: #86bd99;
+    --rm-ok-muted: #223127;
+    --rm-warn: #d6a75a;
+    --rm-warn-muted: #362c1b;
+    --rm-danger: #e08a82;
+    --rm-danger-muted: #3a2321;
+    --rm-focus: #d78b6c;
+    --rm-shadow: 0 1px 1px rgb(0 0 0 / 0.2), 0 12px 32px -16px rgb(0 0 0 / 0.5);
+  }
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --rm-bg: #171817;
+  --rm-surface: #222321;
+  --rm-surface-2: #1d1e1c;
+  --rm-fg: #f4f3ef;
+  --rm-fg-2: #d8d6d0;
+  --rm-muted: #aca9a2;
+  --rm-faint: #7d7a74;
+  --rm-border: #383a36;
+  --rm-border-strong: #474943;
+  --rm-accent: #d78b6c;
+  --rm-accent-muted: #3a2a22;
+  --rm-accent-text: #e7a689;
+  --rm-ok: #86bd99;
+  --rm-ok-muted: #223127;
+  --rm-warn: #d6a75a;
+  --rm-warn-muted: #362c1b;
+  --rm-danger: #e08a82;
+  --rm-danger-muted: #3a2321;
+  --rm-focus: #d78b6c;
+  --rm-shadow: 0 1px 1px rgb(0 0 0 / 0.2), 0 12px 32px -16px rgb(0 0 0 / 0.5);
+}
+
+@theme inline {
+  --color-bg: var(--rm-bg);
+  --color-surface: var(--rm-surface);
+  --color-surface-2: var(--rm-surface-2);
+  --color-fg: var(--rm-fg);
+  --color-fg-2: var(--rm-fg-2);
+  --color-muted: var(--rm-muted);
+  --color-faint: var(--rm-faint);
+  --color-line: var(--rm-border);
+  --color-line-strong: var(--rm-border-strong);
+  --color-accent: var(--rm-accent);
+  --color-accent-muted: var(--rm-accent-muted);
+  --color-accent-text: var(--rm-accent-text);
+  --color-ok: var(--rm-ok);
+  --color-ok-muted: var(--rm-ok-muted);
+  --color-warn: var(--rm-warn);
+  --color-warn-muted: var(--rm-warn-muted);
+  --color-danger: var(--rm-danger);
+  --color-danger-muted: var(--rm-danger-muted);
+  --shadow-soft: var(--rm-shadow);
+  --font-sans: var(--font-geist-sans, "Geist"), ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono, "Geist Mono"), ui-monospace, "SFMono-Regular", "Cascadia Mono", Menlo, monospace;
+  --radius-card: 12px;
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  html {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+    font-feature-settings: "ss01", "cv11";
+  }
+  body {
+    background: var(--rm-bg);
+    color: var(--rm-fg);
+  }
+  ::selection {
+    background: var(--rm-accent-muted);
+    color: var(--rm-fg);
+  }
+  :focus-visible {
+    outline: 2px solid var(--rm-focus);
+    outline-offset: 2px;
+  }
+  .tabular {
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+@keyframes rm-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.35; }
+}
+
+@keyframes rm-rise {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: none; }
+}
+
+.rm-pulse {
+  animation: rm-pulse 2.4s ease-in-out infinite;
+}
+
+.rm-rise {
+  animation: rm-rise 420ms var(--ease-out-soft, ease-out) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rm-pulse, .rm-rise {
+    animation: none;
+  }
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

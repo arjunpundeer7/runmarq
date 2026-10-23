@@ -1,0 +1,4 @@
+{
+  "$comment": "Updated by the release workflow. The website renders downloads only from entries listed here; an empty list shows the pre-release state.",
+  "releases": []
+}

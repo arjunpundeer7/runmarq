@@ -1,0 +1,19 @@
+name: Feature request
+description: Suggest an improvement or a new agent integration
+labels: ["enhancement"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What problem would this solve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed solution
+  - type: textarea
+    id: interface
+    attributes:
+      label: For new agents, link the documented hook or event interface
+      description: runmarq only integrates through documented vendor interfaces.

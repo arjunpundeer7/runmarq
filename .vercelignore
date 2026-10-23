@@ -1,0 +1,12 @@
+target
+node_modules
+**/node_modules
+.turbo
+**/.next
+apps/desktop/src-tauri
+crates
+fixtures
+apps/web/test-results
+.env
+.env.*
+!.env.example

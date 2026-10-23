@@ -1,0 +1,79 @@
+[
+  {
+    "id": "claude_code",
+    "displayName": "Claude Code",
+    "support": "available",
+    "capabilities": {
+      "promptStart": true,
+      "turnCompletion": true,
+      "toolStarted": true,
+      "toolCompleted": true,
+      "planUpdates": true,
+      "approvalEvents": true,
+      "errorEvents": true,
+      "subagents": true,
+      "modelMetadata": true,
+      "transcriptUsage": true,
+      "interruptEvents": false
+    },
+    "limitations": [
+      "Claude Code does not report user interrupts directly. runmarq infers them and marks those runs cancelled, never finished.",
+      "Plan progress is available only when Claude keeps a task list or to-do list.",
+      "Model metadata is reported at session start, not for every prompt."
+    ],
+    "mechanism": "Claude Code hooks (settings.json)",
+    "docsPath": "/docs/integrations/claude-code"
+  },
+  {
+    "id": "codex",
+    "displayName": "Codex",
+    "support": "limited",
+    "capabilities": {
+      "promptStart": true,
+      "turnCompletion": true,
+      "toolStarted": true,
+      "toolCompleted": true,
+      "planUpdates": true,
+      "approvalEvents": true,
+      "errorEvents": false,
+      "subagents": false,
+      "modelMetadata": true,
+      "transcriptUsage": true,
+      "interruptEvents": false
+    },
+    "limitations": [
+      "Requires Codex 0.130 or later, and the runmarq hooks must be trusted once with /hooks inside Codex.",
+      "Codex 0.130 has no tool-failure, interrupt or session-end hooks. Failed shell commands are detected from exit codes when Codex reports them.",
+      "Start Codex with `runmarq run -- codex` to have runs closed when the process exits.",
+      "Already-running Codex IDE sessions that were started without hooks cannot be observed."
+    ],
+    "mechanism": "Codex lifecycle hooks (hooks.json) and the runmarq run wrapper",
+    "docsPath": "/docs/integrations/codex"
+  },
+  {
+    "id": "cursor",
+    "displayName": "Cursor",
+    "support": "limited",
+    "capabilities": {
+      "promptStart": true,
+      "turnCompletion": true,
+      "toolStarted": false,
+      "toolCompleted": true,
+      "planUpdates": true,
+      "approvalEvents": false,
+      "errorEvents": true,
+      "subagents": true,
+      "modelMetadata": true,
+      "transcriptUsage": false,
+      "interruptEvents": true
+    },
+    "limitations": [
+      "Tool start and approval events are not collected: Cursor's pre-execution hooks can block or auto-approve actions, so runmarq does not register them.",
+      "Cursor does not document which shell runs hooks on Windows. Verify the integration after setup.",
+      "Project hooks run only in trusted workspaces. Integrated-terminal commands you run yourself are not agent activity and are not tracked.",
+      "Cursor does not write a session transcript runmarq can read, so its runs have no token counts."
+    ],
+    "mechanism": "Cursor agent hooks (hooks.json)",
+    "docsPath": "/docs/integrations/cursor"
+  }
+]

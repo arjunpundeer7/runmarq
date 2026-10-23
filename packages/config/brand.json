@@ -1,0 +1,11 @@
+{
+  "productName": "runmarq",
+  "cliName": "runmarq",
+  "dataDirName": "runmarq",
+  "bundleIdentifier": "dev.runmarq.desktop",
+  "tagline": "Know when your coding agent will finish.",
+  "description": "Estimated completion times, live progress, and quiet notifications for Claude Code, Codex, and Cursor.",
+  "githubUrl": "https://github.com/arjunpundeer7/runmarq",
+  "contactEmail": null,
+  "siteUrl": null
+}

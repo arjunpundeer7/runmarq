@@ -1,0 +1,31 @@
+[package]
+name = "runmarq-desktop"
+description = "runmarq desktop companion"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
+
+[lib]
+name = "runmarq_desktop_lib"
+crate-type = ["staticlib", "cdylib", "rlib"]
+
+[build-dependencies]
+tauri-build = { version = "2.7", features = [] }
+
+[dependencies]
+runmarq-core.workspace = true
+runmarq-adapters.workspace = true
+runmarq-collector.workspace = true
+runmarq-storage.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+chrono.workspace = true
+anyhow.workspace = true
+tracing.workspace = true
+tauri = { version = "2.12", features = ["tray-icon", "image-png"] }
+tauri-plugin-notification = "2.7"
+tauri-plugin-autostart = "2.7"
+tauri-plugin-single-instance = "2.5"
+tauri-plugin-dialog = "2.8"
+tauri-plugin-opener = "2.7"
