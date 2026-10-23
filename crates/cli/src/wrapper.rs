@@ -57,8 +57,8 @@ mod signals {
         // still receives SIGINT/SIGQUIT normally.
         // SAFETY: installing an async-signal-safe no-op handler.
         unsafe {
-            libc::signal(libc::SIGINT, noop as libc::sighandler_t);
-            libc::signal(libc::SIGQUIT, noop as libc::sighandler_t);
+            libc::signal(libc::SIGINT, noop as *const () as libc::sighandler_t);
+            libc::signal(libc::SIGQUIT, noop as *const () as libc::sighandler_t);
         }
     }
 }
