@@ -47,18 +47,18 @@ axum = { version = "0.8", default-features = false, features = ["http1", "json",
 tower = { version = "0.5", features = ["limit", "timeout"] }
 futures = "0.3"
 tokio-stream = { version = "0.1", features = ["sync"] }
-rusqlite = { version = "0.37", features = ["bundled"] }
-sha2 = "0.10"
+rusqlite = { version = "0.40", features = ["bundled"] }
+sha2 = "0.11"
 hex = "0.4"
-rand = "0.8"
-dirs = "6"
-fs4 = { version = "0.13", features = ["sync"] }
+rand = "0.9"
+dirs = "7"
+fs4 = { version = "1.1", features = ["sync"] }
 clap = { version = "4", features = ["derive"] }
-ureq = { version = "2", default-features = false, features = ["json"] }
+ureq = { version = "3", default-features = false, features = ["json"] }
 toml_edit = "0.22"
 tempfile = "3"
-which = "7"
-ts-rs = { version = "11", features = ["serde-json-impl", "chrono-impl", "no-serde-warnings"] }
+which = "8"
+ts-rs = { version = "12", features = ["serde-json-impl", "chrono-impl", "no-serde-warnings"] }
 
 [profile.release]
 opt-level = 3
