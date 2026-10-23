@@ -62,8 +62,9 @@ export default function Privacy() {
         </ul>
         <h2>This website</h2>
         <p>
-          This site sets no cookies and uses no analytics or third-party trackers. The server may keep standard request logs (address,
-          time, page) for security and operations.
+          This site counts visits with Vercel Web Analytics: the page, the referring site, the browser, operating system and device
+          type, and the country. It sets no cookies and keeps no personal identifiers, and the site has no other trackers. The server
+          may keep standard request logs (address, time, page) for security and operations.
         </p>
         {earlyAccessConfigured ? (
           <p>

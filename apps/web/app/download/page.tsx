@@ -4,7 +4,7 @@ import type { Metadata } from "next";
 import { CodeBlock } from "@/components/CodeBlock";
 import { EarlyAccessForm } from "@/components/EarlyAccessForm";
 import { ContentPage, MoreLink, Note, PageTitle } from "@/components/Prose";
-import { earlyAccessConfigured, pageMetadata, site } from "@/lib/site";
+import { buildSteps, earlyAccessConfigured, pageMetadata, site } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata(
   "/download",
@@ -91,9 +91,7 @@ export default function Download() {
               {site.name} has not had a public release yet. It builds on Windows, macOS and Linux with Rust, Node.js 20.9 or later and pnpm,
               and installers built this way are not code-signed.
             </p>
-            <CodeBlock>{`pnpm install
-cargo build --release -p runmarq-cli
-pnpm build:desktop`}</CodeBlock>
+            <CodeBlock>{buildSteps}</CodeBlock>
             <MoreLink href="/docs/getting-started">Getting started</MoreLink>
           </section>
 

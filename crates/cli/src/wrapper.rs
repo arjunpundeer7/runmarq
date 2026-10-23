@@ -64,10 +64,11 @@ mod signals {
 }
 
 fn is_codex_exec_json(cmd: &[String]) -> bool {
-    let prog = std::path::Path::new(&cmd[0])
-        .file_stem()
-        .and_then(|s| s.to_str())
-        .unwrap_or("")
+    // Split on both separators so Windows-style paths are handled on every OS.
+    let name = cmd[0].rsplit(['/', '\\']).next().unwrap_or("");
+    let prog = name
+        .rsplit_once('.')
+        .map_or(name, |(stem, _)| stem)
         .to_ascii_lowercase();
     prog == "codex"
         && cmd.iter().any(|a| a == "exec" || a == "e")

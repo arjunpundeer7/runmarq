@@ -6,7 +6,7 @@ import { DemoRun } from "@/components/DemoRun";
 import { ConnectRow, MiniRun, ModelPanel, NotificationToast, PhaseTimeline, RangeExplainer, RunActivity, TerminalPanel, TrayMenu } from "@/components/fragments";
 import { IntegrationTabs } from "@/components/IntegrationTabs";
 import { MoreLink } from "@/components/Prose";
-import { ButtonLink, WorksWith } from "@/components/site";
+import { ButtonLink, GitHubMark, WorksWith } from "@/components/site";
 import { pageMetadata, primaryCta, site } from "@/lib/site";
 
 export const metadata: Metadata = pageMetadata("/", null, site.description);
@@ -93,9 +93,23 @@ const STEPS = [
 
 const sectionTitle = "font-serif text-[clamp(1.75rem,1.3rem+1.4vw,2.5rem)] font-medium leading-[1.08] tracking-[-0.025em]";
 
+/** Structured data so search engines can show runmarq as a software application. */
+const structuredData = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: site.name,
+  description: site.description,
+  url: site.url,
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Windows, macOS, Linux",
+  offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+  ...(site.githubUrl ? { sameAs: [site.githubUrl] } : {}),
+};
+
 export default function Home() {
   return (
     <>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }} />
       <section aria-labelledby="hero">
         <div className="hero mx-auto max-w-site px-5 text-center sm:px-8">
           <h1 id="hero" className="mx-auto max-w-[16ch] text-display leading-[1] tracking-[-0.035em] [font-weight:560] lg:max-w-none">
@@ -111,6 +125,11 @@ export default function Home() {
             <ButtonLink href="/how-it-works" variant="ghost" icon={<Play aria-hidden="true" size={16} strokeWidth={2} />}>
               See how it works
             </ButtonLink>
+            {site.githubUrl && (
+              <ButtonLink href={site.githubUrl} variant="ghost" icon={<GitHubMark />}>
+                GitHub
+              </ButtonLink>
+            )}
           </div>
           <WorksWith className="after-lines mt-[clamp(1.25rem,3.2svh,2rem)]" />
           <div id="product" className="after-lines mx-auto mt-[clamp(1.5rem,3.6svh,2.5rem)] max-w-[640px] scroll-mt-24">

@@ -3,6 +3,7 @@ import { docMetadata } from "@/content/docs";
 import Link from "next/link";
 import { CodeBlock } from "@/components/CodeBlock";
 import { PageTitle, Prose } from "@/components/Prose";
+import { buildSteps } from "@/lib/site";
 
 export const metadata: Metadata = docMetadata("/docs/getting-started");
 
@@ -23,15 +24,13 @@ export default function GettingStarted() {
 
         <h2>Build from source</h2>
         <p>
-          Until the first release there are no installers; the <Link href="/download">download page</Link> will list them. In the
-          repository root:
+          Until the first release there are no installers; the <Link href="/download">download page</Link> will list them. Get the
+          code and build it:
         </p>
-        <CodeBlock>{`pnpm install
-cargo build --release -p runmarq-cli
-pnpm build:desktop`}</CodeBlock>
+        <CodeBlock>{buildSteps}</CodeBlock>
         <p>
-          The first command installs the JavaScript workspace, the second builds the <code>runmarq</code> command, and the third bundles
-          the desktop app with the command included. You can also use only the command-line tool; the desktop app is optional.
+          <code>pnpm install</code> installs the JavaScript workspace, <code>cargo build</code> builds the <code>runmarq</code> command,
+          and <code>pnpm build:desktop</code> bundles the desktop app with the command included. You can also use only the command-line tool; the desktop app is optional.
         </p>
 
         <h2>Connect an agent</h2>

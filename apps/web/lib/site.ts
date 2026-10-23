@@ -60,3 +60,14 @@ export const primaryCta = released
   : earlyAccessConfigured
     ? { label: "Get early access", href: "/download#early-access" }
     : { label: "Build from source", href: "/download#source" };
+
+/** The repository's clone address, when the code is public. */
+export const cloneUrl = site.githubUrl ? `${site.githubUrl.replace(/\/$/, "")}.git` : null;
+
+/** Getting the code and building it, as the README shows. */
+export const buildSteps = [
+  ...(cloneUrl ? [`git clone ${cloneUrl}`, "cd runmarq"] : []),
+  "pnpm install",
+  "cargo build --release -p runmarq-cli",
+  "pnpm build:desktop",
+].join("\n");

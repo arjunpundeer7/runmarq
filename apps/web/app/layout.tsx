@@ -45,7 +45,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <Header />
         <main id="main">{children}</main>
         <Footer />
-        <Analytics />
+        {/* The analytics script is served by Vercel; elsewhere it would only 404. */}
+        {process.env.VERCEL && <Analytics />}
       </body>
     </html>
   );
