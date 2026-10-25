@@ -39,6 +39,9 @@ pub struct Tracker {
     pub last_persisted: Option<EtaForecast>,
     pub launcher_id: Option<String>,
     pub agent_process: Option<AgentProcess>,
+    /// The run's end is announced some other way, so no finish or failure
+    /// notification is sent for it.
+    pub quiet_end: bool,
     /// Tasks from agents that edit their list a task at a time, and whether
     /// each is done.
     pub tasks: BTreeMap<String, bool>,
@@ -73,6 +76,7 @@ impl Tracker {
             last_persisted: None,
             launcher_id: None,
             agent_process: None,
+            quiet_end: false,
             tasks: BTreeMap::new(),
             signals,
             last_signal_snapshot_ms: None,

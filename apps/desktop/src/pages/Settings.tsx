@@ -269,6 +269,12 @@ export function Settings() {
           }}
         />
         <Toggle
+          label="Resume Claude Code when its usage limit resets"
+          description="Continues the stopped session in the background, in the same folder, model and permission mode."
+          checked={prefs.resumeAfterUsageLimit}
+          onChange={(v) => save({ resumeAfterUsageLimit: v })}
+        />
+        <Toggle
           label="Compact panel"
           description="A small window listing active runs. The tray menu shows the same information."
           checked={prefs.compactWidget}

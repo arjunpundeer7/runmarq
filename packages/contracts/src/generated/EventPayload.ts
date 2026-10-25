@@ -62,4 +62,9 @@ cwd?: string,
  * The prompt came from the agent itself, such as a background task
  * reporting back, rather than from the user.
  */
-injected?: boolean, };
+injected?: boolean, 
+/**
+ * When the usage limit that stopped the run resets, as the agent's
+ * message gave it.
+ */
+limitResetsAt?: string, };

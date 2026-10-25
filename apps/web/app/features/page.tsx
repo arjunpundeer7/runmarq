@@ -112,6 +112,7 @@ const GROUPS: Group[] = [
       "Output tokens, responses, runs and working time per agent, for today, the last 7 days and the current 5-hour window.",
       "When the current window started and when it resets.",
       "An optional budget per window that you set yourself, shown as progress.",
+      "When Claude Code stops at its usage limit, runmarq can resume the session in the background once the limit resets.",
       "Counted from the transcripts on this computer. Not your plan's official meter: input and cached tokens are not counted, and runmarq does not know your plan's limits.",
     ],
     frag: <UsagePanel />,

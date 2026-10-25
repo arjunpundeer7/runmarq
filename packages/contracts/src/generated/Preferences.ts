@@ -46,4 +46,9 @@ similarPrompts: boolean,
  * The user's own output-token budgets per five-hour window, by agent,
  * shown as progress on the usage page. Agents without one show counts only.
  */
-usageWindowBudgets: { [key in AgentSource]?: number }, };
+usageWindowBudgets: { [key in AgentSource]?: number }, 
+/**
+ * When Claude Code stops at its plan's usage limit, resume the session
+ * in the background once the five-hour window resets.
+ */
+resumeAfterUsageLimit: boolean, };

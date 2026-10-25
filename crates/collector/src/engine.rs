@@ -22,6 +22,7 @@
 
 use crate::learning;
 use crate::probe::{self, GitProbe, ProbeRequest, ProbeResult, TranscriptCursor};
+use crate::resume::{self, Resume};
 use crate::stats::Samples;
 use crate::stuck;
 use crate::tracker::{to_view, Tracker};
@@ -66,6 +67,8 @@ const MAX_TOOL_STARTS: usize = 2000;
 const CONTINUE_WITHIN: Duration = Duration::seconds(10);
 /// Tool calls in flight for longer than this are treated as lost.
 const TOOL_IN_FLIGHT_MAX: Duration = Duration::minutes(15);
+/// The reason Claude Code gives when a turn stops at the plan's usage limit.
+const USAGE_LIMIT: &str = "rate_limit";
 /// A run's agent process is checked only once it has been quiet this long,
 /// so events sent just before the agent exited have arrived.
 const PROCESS_QUIET: Duration = Duration::seconds(5);
@@ -165,6 +168,10 @@ pub struct Engine {
     finished_since_eval: u32,
     hook_config_path: Option<PathBuf>,
     process_running: fn(&AgentProcess) -> bool,
+    /// Sessions to resume once the usage limit resets; memory only.
+    resumes: Vec<Resume>,
+    /// Resumes in a row per session that stopped at the limit again.
+    resume_attempts: HashMap<String, u32>,
     pub stats: EngineStats,
 }
 
@@ -216,6 +223,8 @@ impl Engine {
             finished_since_eval: 0,
             hook_config_path: None,
             process_running: crate::process::is_running,
+            resumes: Vec::new(),
+            resume_attempts: HashMap::new(),
             stats: EngineStats::default(),
         };
         e.refresh_calibration();
@@ -638,6 +647,9 @@ impl Engine {
                     let end = self.trackers[&id].row.last_event_at;
                     self.finish(&id, RunState::Cancelled, ExitReason::Superseded, end, msgs)?;
                 }
+                // The session carried on, by the user or by Claude Code itself.
+                self.resumes
+                    .retain(|r| r.session_id != env.source_session_id);
                 Ok(Some(self.create_run(env, key, session_id, ts)?))
             }
             _ => {
@@ -972,7 +984,29 @@ impl Engine {
             self.snapshot_signals(run_id, now);
         }
         if let Some((state, reason)) = terminal {
-            return self.finish(run_id, state, reason, ts, msgs);
+            let at_limit =
+                state == RunState::Failed && env.payload.reason.as_deref() == Some(USAGE_LIMIT);
+            let plan = if at_limit {
+                self.resume_plan(env, run_id, now)
+            } else {
+                None
+            }
+            .filter(|p| self.will_resume(&p.session_id));
+            let open = plan.as_ref().is_some_and(|p| self.agent_open(p));
+            if plan.is_some() && !open {
+                // "Will resume at …" says it better than "run failed".
+                if let Some(t) = self.trackers.get_mut(run_id) {
+                    t.quiet_end = true;
+                }
+            }
+            if state == RunState::Completed {
+                self.resume_attempts.remove(&env.source_session_id);
+            }
+            self.finish(run_id, state, reason, ts, msgs)?;
+            if let Some(plan) = plan {
+                self.schedule_resume(plan, open, msgs);
+            }
+            return Ok(());
         }
         if attention {
             self.notify(run_id, NotificationKind::AttentionRequired, msgs);
@@ -1084,6 +1118,7 @@ impl Engine {
         let wall = t.row.wall_duration_ms.unwrap_or(0);
         let long_enough = wall >= self.prefs.notify_min_duration_seconds as u64 * 1000;
         match state {
+            _ if t.quiet_end => {}
             RunState::Completed if long_enough => {
                 self.notify_row(&t, NotificationKind::RunFinished, msgs)
             }
@@ -1436,6 +1471,205 @@ impl Engine {
         changed
     }
 
+    // ------------------------------------------------- resuming after limits
+
+    /// What resuming this run's session would need, if it can be resumed:
+    /// a Claude Code run whose folder is known, stopped by a limit that
+    /// resets within a day.
+    fn resume_plan(
+        &mut self,
+        env: &EventEnvelope,
+        run_id: &str,
+        now: DateTime<Utc>,
+    ) -> Option<Resume> {
+        let t = self.trackers.get(run_id)?;
+        if t.row.agent != AgentSource::ClaudeCode {
+            return None;
+        }
+        let cwd = t.cwd.clone()?;
+        let permission_mode = t
+            .row
+            .permission_mode
+            .as_deref()
+            .and_then(resume::cli_permission_mode);
+        let agent_process = t.agent_process;
+        let model = t.row.model.clone();
+        let repo = t.row.repository_id.clone();
+        let resets = env
+            .payload
+            .limit_resets_at
+            .filter(|at| *at > now - resume::MARGIN)
+            .unwrap_or_else(|| self.window_resets_at(now));
+        if resets - now > resume::MAX_WAIT {
+            return None;
+        }
+        Some(Resume {
+            run_id: run_id.to_string(),
+            session_id: env.source_session_id.clone(),
+            cwd,
+            permission_mode,
+            model,
+            due: resets.max(now) + resume::MARGIN,
+            agent_process,
+            fork: false,
+            place: self.repo_name(repo.as_deref()),
+        })
+    }
+
+    /// Whether the Claude Code window that ran `r` is still open.
+    fn agent_open(&self, r: &Resume) -> bool {
+        r.agent_process.is_some_and(|p| (self.process_running)(&p))
+    }
+
+    /// When Claude Code's current five-hour window ends, as runmarq measures
+    /// it; five hours from now when it cannot tell.
+    fn window_resets_at(&self, now: DateTime<Utc>) -> DateTime<Utc> {
+        crate::usage::report(self, now)
+            .ok()
+            .and_then(|r| {
+                r.agents
+                    .into_iter()
+                    .find(|a| a.agent == AgentSource::ClaudeCode)
+            })
+            .and_then(|a| a.current_window)
+            .map(|w| w.ends_at)
+            .filter(|end| *end > now)
+            .unwrap_or(now + Duration::hours(crate::usage::WINDOW_HOURS as i64))
+    }
+
+    /// Whether a run of `session` stopping at the limit now would be resumed.
+    fn will_resume(&self, session: &str) -> bool {
+        self.prefs.resume_after_usage_limit
+            && self.resume_attempts.get(session).copied().unwrap_or(0) < resume::MAX_ATTEMPTS
+    }
+
+    /// Schedules `plan`. While the window that ran it is `open`, Claude Code
+    /// may continue there by itself, so nothing is announced yet.
+    fn schedule_resume(&mut self, plan: Resume, open: bool, msgs: &mut Vec<StreamMessage>) {
+        let attempts = self
+            .resume_attempts
+            .entry(plan.session_id.clone())
+            .or_insert(0);
+        *attempts += 1;
+        let key = format!("{}:{attempts}", NotificationKind::ResumeScheduled.as_str());
+        if !open {
+            let at = plan.due.with_timezone(&chrono::Local).format("%H:%M");
+            let place = plan
+                .place
+                .as_ref()
+                .map(|n| format!(" in {n}"))
+                .unwrap_or_default();
+            self.notify_plain(
+                &plan.run_id,
+                NotificationKind::ResumeScheduled,
+                &key,
+                format!("Claude Code will resume at {at}"),
+                format!("Stopped at the usage limit{place}."),
+                msgs,
+            );
+        }
+        self.resumes.retain(|r| r.session_id != plan.session_id);
+        self.resumes.push(plan);
+    }
+
+    /// Resumes whose time has come, removed from the schedule. Those whose
+    /// Claude Code window is still open are marked to fork.
+    pub fn take_due_resumes(&mut self, now: DateTime<Utc>) -> Vec<Resume> {
+        let (due, later): (Vec<Resume>, Vec<Resume>) = std::mem::take(&mut self.resumes)
+            .into_iter()
+            .partition(|r| r.due <= now);
+        self.resumes = later;
+        due.into_iter()
+            .map(|mut r| {
+                r.fork = self.agent_open(&r);
+                r
+            })
+            .collect()
+    }
+
+    /// Resumes waiting for the limit to reset.
+    pub fn scheduled_resumes(&self) -> &[Resume] {
+        &self.resumes
+    }
+
+    /// Reports how starting a resume went.
+    pub fn resume_started(
+        &mut self,
+        r: &Resume,
+        result: std::result::Result<(), String>,
+    ) -> Vec<StreamMessage> {
+        let mut msgs = Vec::new();
+        let place = r
+            .place
+            .as_ref()
+            .map(|n| format!(" in {n}"))
+            .unwrap_or_default();
+        let (title, body) = match result {
+            Ok(()) if r.fork => (
+                "Claude Code resumed".to_string(),
+                format!("Continuing{place} in a new session, since its window is still open."),
+            ),
+            Ok(()) => (
+                "Claude Code resumed".to_string(),
+                format!("Continuing{place} after the usage limit reset."),
+            ),
+            Err(e) => {
+                self.stats.error(format!("resume failed: {e}"));
+                ("Claude Code could not be resumed".to_string(), e)
+            }
+        };
+        let key = format!(
+            "{}:{}",
+            NotificationKind::Resumed.as_str(),
+            self.resume_attempts
+                .get(&r.session_id)
+                .copied()
+                .unwrap_or(1)
+        );
+        self.notify_plain(
+            &r.run_id,
+            NotificationKind::Resumed,
+            &key,
+            title,
+            body,
+            &mut msgs,
+        );
+        msgs
+    }
+
+    /// A notification that is not about a run's own state, deduplicated by
+    /// `key` and shown only while notifications are on.
+    fn notify_plain(
+        &mut self,
+        run_id: &str,
+        kind: NotificationKind,
+        key: &str,
+        title: String,
+        body: String,
+        msgs: &mut Vec<StreamMessage>,
+    ) {
+        if !self.prefs.notifications_enabled || self.prefs.quiet_mode {
+            return;
+        }
+        match self.store.record_notification(run_id, key, Utc::now()) {
+            Ok(true) => {}
+            Ok(false) => return,
+            Err(e) => {
+                self.stats.error(format!("notification log: {e}"));
+                return;
+            }
+        }
+        msgs.push(StreamMessage::Notification {
+            notification: NotificationRequest {
+                id: format!("{run_id}:{key}"),
+                run_id: run_id.to_string(),
+                kind,
+                title,
+                body,
+            },
+        });
+    }
+
     // ------------------------------------------------------- notifications
 
     fn notify(&mut self, run_id: &str, kind: NotificationKind, msgs: &mut Vec<StreamMessage>) {
@@ -1454,6 +1688,7 @@ impl Engine {
                 NotificationKind::AttentionRequired => p.notify_on_attention,
                 NotificationKind::ConnectionLost => p.notify_on_disconnect,
                 NotificationKind::Stuck => p.notify_on_stuck,
+                NotificationKind::ResumeScheduled | NotificationKind::Resumed => true,
             };
         if !wanted {
             return;
@@ -1509,6 +1744,9 @@ impl Engine {
                     .map(|s| s.detail.clone())
                     .unwrap_or_else(|| "No progress for a while".into()),
             ),
+            NotificationKind::ResumeScheduled | NotificationKind::Resumed => {
+                (format!("{agent} will resume"), format!("{what}{place}"))
+            }
         };
         msgs.push(StreamMessage::Notification {
             notification: NotificationRequest {
@@ -1761,6 +1999,9 @@ impl Engine {
                 t.git_baseline = None;
                 t.cwd = None;
             }
+        }
+        if !p.resume_after_usage_limit {
+            self.resumes.clear();
         }
         self.prefs = p.clone();
         self.write_hook_config();

@@ -457,6 +457,11 @@ pub struct EventPayload {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     #[ts(optional)]
     pub injected: Option<bool>,
+    /// When the usage limit that stopped the run resets, as the agent's
+    /// message gave it.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    #[ts(optional)]
+    pub limit_resets_at: Option<DateTime<Utc>>,
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize, TS)]

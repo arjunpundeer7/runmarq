@@ -488,6 +488,9 @@ pub struct Preferences {
     /// shown as progress on the usage page. Agents without one show counts only.
     #[ts(as = "HashMap<AgentSource, f64>")]
     pub usage_window_budgets: HashMap<AgentSource, u64>,
+    /// When Claude Code stops at its plan's usage limit, resume the session
+    /// in the background once the five-hour window resets.
+    pub resume_after_usage_limit: bool,
 }
 
 impl Default for Preferences {
@@ -512,6 +515,7 @@ impl Default for Preferences {
             sample_git_diff: true,
             similar_prompts: true,
             usage_window_budgets: HashMap::new(),
+            resume_after_usage_limit: false,
         }
     }
 }
@@ -525,6 +529,10 @@ pub enum NotificationKind {
     AttentionRequired,
     ConnectionLost,
     Stuck,
+    /// A run stopped at the usage limit and will be resumed at the reset.
+    ResumeScheduled,
+    /// A run stopped at the usage limit was resumed.
+    Resumed,
 }
 
 impl NotificationKind {
@@ -535,6 +543,8 @@ impl NotificationKind {
             NotificationKind::AttentionRequired => "attention_required",
             NotificationKind::ConnectionLost => "connection_lost",
             NotificationKind::Stuck => "stuck",
+            NotificationKind::ResumeScheduled => "resume_scheduled",
+            NotificationKind::Resumed => "resumed",
         }
     }
 }

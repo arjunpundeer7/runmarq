@@ -62,6 +62,26 @@ runmarq integrations setup claude --project ./my-repo`}</CodeBlock>
           If Claude Code is closed mid-run, for example with its terminal window, runmarq notices within seconds that its process has
           exited and marks the run cancelled.
         </p>
+        <h2 id="usage-limits">Usage limits</h2>
+        <p>
+          A run that stops at your plan&apos;s usage limit ends as failed. With Settings → Resume Claude Code when its usage limit resets
+          turned on, runmarq continues the session in the background a few minutes after the reset, using <code>claude --resume</code>{" "}
+          in the same folder, with the same model and permission mode. The reset time comes from Claude Code&apos;s limit message, or from
+          the five-hour window runmarq measures when the message has none. Limits that reset more than a day away, such as the weekly
+          limit, are not waited for.
+        </p>
+        <p>
+          A session that carries on before then, because you sent a prompt or Claude Code continued by itself, is left alone. If nothing
+          has continued five minutes after the reset and its window is still open, runmarq continues the work in a fork of the session, so
+          the open window is never written to from two places. After three resumes in a row that stop at the limit again, runmarq stops for
+          that session.
+        </p>
+        <p>
+          The resumed session runs without a terminal, so it cannot ask for permission: tools that need your approval are refused unless
+          the session&apos;s permission mode allows them. runmarq keeps none of its output; open the session in Claude Code to see the
+          work. A waiting resume needs the folder&apos;s path, which runmarq never stores, so it is held in memory and lost if runmarq quits
+          before the reset.
+        </p>
         <h2>Running inside Cursor</h2>
         <p>
           Cursor can also run hooks from Claude Code settings files. Those payloads are recognised and ignored, so a Cursor run is counted

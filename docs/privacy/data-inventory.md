@@ -29,7 +29,8 @@ Numbers only, each behind a setting (Settings → Estimation signals):
 ## Never stored
 
 - Prompt text. It is read only inside the hook process to derive `PromptFeatures`, the optional word vector and an optional title, then dropped.
-- Transcript text, the transcript's path, and the run's working directory. Paths are held in the collector's memory while a run is open.
+- Transcript text, the transcript's path, and the run's working directory. Paths are held in the collector's memory while a run is open, and the working directory also while a Claude Code session waits to be resumed after a usage limit.
+- Output of a session resumed after a usage limit. It is discarded; the work is in the agent's own session.
 - Names of changed files from `git diff`. They are compared in memory and discarded.
 - Tool input and output, file contents, command lines, environment variables, tokens.
 

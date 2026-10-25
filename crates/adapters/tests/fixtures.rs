@@ -165,6 +165,8 @@ fn claude_interrupt_and_failure() {
     let end = events.last().unwrap();
     assert_eq!(end.event_type, EventType::RunFailed);
     assert_eq!(end.payload.reason.as_deref(), Some("rate_limit"));
+    let resets = end.payload.limit_resets_at.expect("reset time read");
+    assert!(resets - Utc::now() <= chrono::Duration::hours(24));
 }
 
 #[test]

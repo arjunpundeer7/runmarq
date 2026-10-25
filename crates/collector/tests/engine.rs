@@ -1656,3 +1656,235 @@ fn turning_off_similar_prompts_erases_sketches() {
         "new sketches are dropped while off"
     );
 }
+
+/// A Claude Code run in `session` that stops at the usage limit after 10 min.
+fn run_to_usage_limit(
+    e: &mut Engine,
+    session: &str,
+    start: DateTime<Utc>,
+    agent: AgentSource,
+) -> Vec<StreamMessage> {
+    stop_at_limit(e, session, start, agent, None, None)
+}
+
+/// A run of `session` that starts at `start` and stops at the usage limit
+/// ten minutes later, from the window of `pid`, with the reset time the
+/// agent reported.
+fn stop_at_limit(
+    e: &mut Engine,
+    session: &str,
+    start: DateTime<Utc>,
+    agent: AgentSource,
+    pid: Option<u32>,
+    resets: Option<DateTime<Utc>>,
+) -> Vec<StreamMessage> {
+    let mut p = prompt(TaskCategory::BugFix);
+    p.cwd = Some(std::env::temp_dir().display().to_string());
+    p.permission_mode = Some("acceptedits".into());
+    p.agent_process = pid.map(|pid| AgentProcess { pid, started: 1 });
+    ing(
+        e,
+        env(agent, session, None, EventType::PromptSubmitted, start, p),
+    )
+    .unwrap();
+    let stop = EventPayload {
+        reason: Some("rate_limit".into()),
+        status: Some("error".into()),
+        limit_resets_at: resets,
+        ..Default::default()
+    };
+    ing(
+        e,
+        env(
+            agent,
+            session,
+            None,
+            EventType::RunFailed,
+            start + Duration::minutes(10),
+            stop,
+        ),
+    )
+    .unwrap()
+    .messages
+}
+
+#[test]
+fn a_run_stopped_by_the_usage_limit_is_resumed_at_the_reset_when_turned_on() {
+    let mut e = engine();
+    let start = Utc::now() - Duration::minutes(10);
+
+    run_to_usage_limit(&mut e, "off", start, AgentSource::ClaudeCode);
+    assert!(e.scheduled_resumes().is_empty(), "off by default");
+
+    let mut prefs = e.preferences().clone();
+    prefs.resume_after_usage_limit = true;
+    e.set_preferences(prefs).unwrap();
+
+    let msgs = run_to_usage_limit(&mut e, "on", start, AgentSource::ClaudeCode);
+    assert_eq!(
+        notifications(&msgs),
+        vec![NotificationKind::ResumeScheduled]
+    );
+    let [r] = e.scheduled_resumes() else {
+        panic!("one resume")
+    };
+    assert_eq!(r.session_id, "on");
+    assert_eq!(r.permission_mode, Some("acceptEdits"));
+    // The window opened with the run, so it resets five hours after it began.
+    let expected = start + Duration::hours(5) + runmarq_collector::resume::MARGIN;
+    assert!(
+        (r.due - expected).num_seconds().abs() <= 2,
+        "due {} vs {}",
+        r.due,
+        expected
+    );
+
+    assert!(e.take_due_resumes(Utc::now()).is_empty());
+    let due = e.take_due_resumes(expected + Duration::seconds(5));
+    assert_eq!(due.len(), 1);
+    assert!(e.scheduled_resumes().is_empty());
+    let started = e.resume_started(&due[0], Ok(()));
+    assert_eq!(notifications(&started), vec![NotificationKind::Resumed]);
+
+    run_to_usage_limit(&mut e, "codex", start, AgentSource::Codex);
+    assert!(
+        e.scheduled_resumes().is_empty(),
+        "only Claude Code is resumed"
+    );
+
+    run_to_usage_limit(&mut e, "cancelled", start, AgentSource::ClaudeCode);
+    assert_eq!(e.scheduled_resumes().len(), 1);
+    let mut prefs = e.preferences().clone();
+    prefs.resume_after_usage_limit = false;
+    e.set_preferences(prefs).unwrap();
+    assert!(
+        e.scheduled_resumes().is_empty(),
+        "turning it off cancels resumes already scheduled"
+    );
+}
+
+#[test]
+fn the_reset_time_claude_code_reports_is_used_and_weekly_limits_are_not_waited_for() {
+    let mut e = engine();
+    let mut prefs = e.preferences().clone();
+    prefs.resume_after_usage_limit = true;
+    e.set_preferences(prefs).unwrap();
+    let start = Utc::now() - Duration::minutes(10);
+
+    let resets = start + Duration::hours(2);
+    stop_at_limit(
+        &mut e,
+        "session",
+        start,
+        AgentSource::ClaudeCode,
+        None,
+        Some(resets),
+    );
+    let [r] = e.scheduled_resumes() else {
+        panic!("one resume")
+    };
+    assert_eq!(r.due, resets + runmarq_collector::resume::MARGIN);
+
+    let msgs = stop_at_limit(
+        &mut e,
+        "weekly",
+        start,
+        AgentSource::ClaudeCode,
+        None,
+        Some(start + Duration::days(3)),
+    );
+    assert_eq!(
+        e.scheduled_resumes().len(),
+        1,
+        "only the first is waited for"
+    );
+    assert_eq!(notifications(&msgs), vec![NotificationKind::RunFailed]);
+}
+
+#[test]
+fn a_window_still_open_at_the_reset_is_resumed_in_a_fork() {
+    let mut e = engine();
+    // Window 7 stays open; window 8 has been closed.
+    e.set_process_check(|p| p.pid == 7);
+    let mut prefs = e.preferences().clone();
+    prefs.resume_after_usage_limit = true;
+    e.set_preferences(prefs).unwrap();
+    let start = Utc::now() - Duration::minutes(10);
+    let later = Utc::now() + Duration::hours(6);
+
+    let msgs = stop_at_limit(
+        &mut e,
+        "open",
+        start,
+        AgentSource::ClaudeCode,
+        Some(7),
+        None,
+    );
+    assert_eq!(
+        notifications(&msgs),
+        vec![NotificationKind::RunFailed],
+        "no resume is announced for a window that is still open"
+    );
+    let [r] = <[_; 1]>::try_from(e.take_due_resumes(later)).unwrap();
+    assert!(r.fork, "the session that window holds is not written to");
+
+    stop_at_limit(
+        &mut e,
+        "closed",
+        start,
+        AgentSource::ClaudeCode,
+        Some(8),
+        None,
+    );
+    let [r] = <[_; 1]>::try_from(e.take_due_resumes(later)).unwrap();
+    assert!(!r.fork);
+
+    stop_at_limit(
+        &mut e,
+        "went-on",
+        start,
+        AgentSource::ClaudeCode,
+        Some(8),
+        None,
+    );
+    assert_eq!(e.scheduled_resumes().len(), 1);
+    ing(
+        &mut e,
+        env(
+            AgentSource::ClaudeCode,
+            "went-on",
+            None,
+            EventType::PromptSubmitted,
+            Utc::now(),
+            prompt(TaskCategory::BugFix),
+        ),
+    )
+    .unwrap();
+    assert!(
+        e.scheduled_resumes().is_empty(),
+        "a session that carried on is not resumed again"
+    );
+}
+
+#[test]
+fn repeated_limits_stop_resuming_after_three_attempts() {
+    let mut e = engine();
+    e.set_process_check(|_| false);
+    let mut prefs = e.preferences().clone();
+    prefs.resume_after_usage_limit = true;
+    e.set_preferences(prefs).unwrap();
+    let start = Utc::now() - Duration::minutes(10);
+    for i in 0..5 {
+        stop_at_limit(
+            &mut e,
+            "s",
+            start + Duration::seconds(i),
+            AgentSource::ClaudeCode,
+            Some(8),
+            None,
+        );
+        let n = e.scheduled_resumes().len();
+        assert_eq!(n, usize::from(i < 3), "attempt {}", i + 1);
+        e.take_due_resumes(Utc::now() + Duration::hours(6));
+    }
+}

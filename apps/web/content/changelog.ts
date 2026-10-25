@@ -34,6 +34,7 @@ export const CHANGELOG: ChangelogEntry[] = [
       "Usage page: output tokens, responses, runs and working time per agent for today, the last 7 days and the current 5-hour window, with an optional budget.",
       "runmarq wait blocks until a run ends and exits with its outcome; runmarq statusline prints one line for prompts, tmux and Claude Code.",
       "An optional sound with notifications.",
+      "Claude Code sessions that stop at the usage limit can resume in the background once the limit resets, at the time Claude Code reported, in the same folder, model and permission mode. Off by default; a session that carries on by itself is left alone, and a window still open at the reset continues in a fork, never from two places.",
       "Once a run is under way, the history baseline reads remaining time from earlier runs that lasted at least as long.",
       "Prompts that arrive while the agent is still working, such as messages typed mid-turn or background-task notices, continue the run instead of splitting it. Cut-off runs end at their last activity, and history recorded before this is repaired at training time.",
       "Signals beyond hook events: token counts and context size from Claude Code and Codex transcripts, working-tree changes from git, learned durations for shell commands, and reported effort level. Transcripts, git and prompt comparison can each be turned off.",

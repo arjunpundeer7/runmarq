@@ -246,6 +246,7 @@ const defaultPrefs: Preferences = {
   readTranscripts: true,
   sampleGitDiff: true,
   similarPrompts: true,
+  resumeAfterUsageLimit: false,
   usageWindowBudgets: {},
 };
 

@@ -13,6 +13,7 @@ pub mod lifecycle;
 pub mod migrate;
 pub mod probe;
 pub mod process;
+pub mod resume;
 pub mod server;
 pub mod spool;
 pub mod stats;

@@ -108,6 +108,17 @@ const PROBLEMS: Array<{ q: string; a: ReactNode }> = [
     ),
   },
   {
+    q: "Claude Code did not resume after its usage limit.",
+    a: (
+      <>
+        Check that Settings → Resume Claude Code when its usage limit resets was on when the limit was reached, that runmarq kept running
+        until the reset, and that the <code>claude</code> command is on your path. Weekly limits, Codex and Cursor are not resumed, and
+        runmarq stops after three resumes in a row that hit the limit again. See{" "}
+        <Link href="/docs/integrations/claude-code#usage-limits">Claude Code</Link>.
+      </>
+    ),
+  },
+  {
     q: "No notifications appear.",
     a: (
       <>

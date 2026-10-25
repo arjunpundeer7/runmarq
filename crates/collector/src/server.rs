@@ -504,6 +504,25 @@ fn drain_spool(state: &Shared) {
     broadcast_all(state, msgs);
 }
 
+/// Starts the resumes whose usage limit has reset, outside the engine lock.
+fn run_resumes(state: &Shared) {
+    let due = {
+        let mut e = state.engine.lock().unwrap_or_else(|p| p.into_inner());
+        e.take_due_resumes(Utc::now())
+    };
+    for r in due {
+        let result = crate::resume::start(&r);
+        if result.is_ok() {
+            tracing::info!(session = %r.session_id, fork = r.fork, "resumed after the usage limit reset");
+        }
+        let msgs = {
+            let mut e = state.engine.lock().unwrap_or_else(|p| p.into_inner());
+            e.resume_started(&r, result)
+        };
+        broadcast_all(state, msgs);
+    }
+}
+
 /// Reads transcripts and samples `git` for open runs without holding the
 /// engine lock, then hands the results back.
 fn run_probes(state: &Shared) {
@@ -635,6 +654,7 @@ pub async fn start(opts: CollectorOptions) -> anyhow::Result<Running> {
                         msgs
                     };
                     broadcast_all(&s2, msgs);
+                    run_resumes(&s2);
                     if n.is_multiple_of(2) {
                         drain_spool(&s2);
                     }

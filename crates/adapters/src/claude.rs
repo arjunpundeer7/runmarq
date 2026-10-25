@@ -105,6 +105,74 @@ pub fn hook_command(exe: &Path) -> String {
     )
 }
 
+/// When a usage limit resets, read from Claude Code's message such as
+/// "You've hit your session limit · resets 3:45pm". The time is in the
+/// computer's own time zone. Older versions end the message with
+/// `|<unix seconds>` instead.
+fn limit_resets_at<Tz: chrono::TimeZone>(
+    text: &str,
+    now: chrono::DateTime<Tz>,
+) -> Option<chrono::DateTime<chrono::Utc>> {
+    use chrono::{Datelike, Utc};
+    if text.len() > 2000 {
+        return None;
+    }
+    if let Some(secs) = text
+        .rsplit_once('|')
+        .and_then(|(_, s)| s.trim().parse::<i64>().ok())
+        .filter(|s| *s > 1_000_000_000)
+    {
+        return chrono::DateTime::from_timestamp(secs, 0);
+    }
+    let lower = text.to_ascii_lowercase();
+    let rest = &lower[lower.find("resets ")? + "resets ".len()..];
+    let mut words = rest.split_whitespace().peekable();
+    let weekday = words.peek().and_then(|w| w.parse::<chrono::Weekday>().ok());
+    if weekday.is_some() {
+        words.next();
+    }
+    let clock = words.next()?;
+    let (digits, suffix) = clock.split_at(
+        clock
+            .find(|c: char| !(c.is_ascii_digit() || c == ':'))
+            .unwrap_or(clock.len()),
+    );
+    let meridiem = |s: &str| {
+        if s.starts_with("am") {
+            Some(0)
+        } else if s.starts_with("pm") {
+            Some(12)
+        } else {
+            None
+        }
+    };
+    let offset = match meridiem(suffix) {
+        Some(add) => Some(add),
+        None if suffix.is_empty() => words.next().and_then(meridiem),
+        None if suffix.starts_with(|c: char| c.is_ascii_alphabetic()) => return None,
+        None => None,
+    };
+    let (h, m) = match digits.split_once(':') {
+        Some((h, m)) => (h.parse::<u32>().ok()?, m.parse::<u32>().ok()?),
+        None => (digits.parse::<u32>().ok()?, 0),
+    };
+    let hour = match offset {
+        Some(add) if (1..=12).contains(&h) => h % 12 + add,
+        None if h < 24 => h,
+        _ => return None,
+    };
+    let time = chrono::NaiveTime::from_hms_opt(hour, m, 0)?;
+    // A reset that has only just passed is the one the message meant.
+    let earliest = now.with_timezone(&Utc) - chrono::Duration::minutes(10);
+    let tz = now.timezone();
+    (0..8)
+        .map(|d| now.date_naive() + chrono::Days::new(d))
+        .filter(|d| weekday.is_none_or(|w| d.weekday() == w))
+        .filter_map(|d| tz.from_local_datetime(&d.and_time(time)).earliest())
+        .map(|t| t.with_timezone(&Utc))
+        .find(|t| *t > earliest)
+}
+
 /// Plan/install/verify/uninstall for the matcher-group schema. Shared with Codex.
 pub(crate) mod flow {
     use super::*;
@@ -559,6 +627,13 @@ impl Adapter for Claude {
                     .get("error")
                     .and_then(|e| e.as_str().or_else(|| e.get("type").and_then(Value::as_str)))
                     .and_then(safe_keyword);
+                if payload.reason.as_deref() == Some("rate_limit") {
+                    let now = ctx.now.with_timezone(&chrono::Local);
+                    payload.limit_resets_at = ["last_assistant_message", "error_details"]
+                        .into_iter()
+                        .filter_map(|k| str_field(&v, k))
+                        .find_map(|text| limit_resets_at(text, now));
+                }
                 events.push((EventType::RunFailed, payload));
             }
             "SessionEnd" => {
@@ -602,5 +677,66 @@ impl Adapter for Claude {
             stdout: None,
             ignored: None,
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::limit_resets_at;
+    use chrono::{DateTime, FixedOffset, TimeZone, Utc};
+
+    fn at(offset_hours: i32, rfc: &str) -> DateTime<FixedOffset> {
+        let tz = FixedOffset::east_opt(offset_hours * 3600).unwrap();
+        tz.from_local_datetime(&rfc.parse().unwrap()).unwrap()
+    }
+
+    fn utc(rfc: &str) -> DateTime<Utc> {
+        rfc.parse().unwrap()
+    }
+
+    #[test]
+    fn reads_the_reset_time_from_the_limit_message() {
+        let now = at(0, "2026-10-25T13:00:00");
+        let read = |text: &str| limit_resets_at(text, now);
+        assert_eq!(
+            read("You've hit your session limit · resets 3:45pm"),
+            Some(utc("2026-10-25T15:45:00Z"))
+        );
+        assert_eq!(
+            read("5-hour limit reached ∙ resets 3pm (Europe/London)"),
+            Some(utc("2026-10-25T15:00:00Z"))
+        );
+        assert_eq!(
+            read("Usage limit reached · resets 9:30 AM"),
+            Some(utc("2026-10-26T09:30:00Z")),
+            "a time already past today is tomorrow"
+        );
+        assert_eq!(read("resets 15:30."), Some(utc("2026-10-25T15:30:00Z")));
+        assert_eq!(
+            read("You've hit your weekly limit · resets Mon 12:00am"),
+            Some(utc("2026-10-26T00:00:00Z"))
+        );
+        assert_eq!(
+            read("Claude AI usage limit reached|1793000000"),
+            DateTime::from_timestamp(1_793_000_000, 0)
+        );
+        assert_eq!(read("API Error: Rate limit reached"), None);
+        assert_eq!(read("429 Too Many Requests"), None);
+        assert_eq!(read("resets 13pm"), None);
+    }
+
+    #[test]
+    fn reset_times_are_in_the_computers_time_zone() {
+        let now = at(5, "2026-10-25T13:00:00");
+        assert_eq!(
+            limit_resets_at("You've hit your session limit · resets 3:45pm", now),
+            Some(utc("2026-10-25T10:45:00Z"))
+        );
+        let just_after = at(0, "2026-10-25T15:46:00");
+        assert_eq!(
+            limit_resets_at("resets 3:45pm", just_after),
+            Some(utc("2026-10-25T15:45:00Z")),
+            "a reset that has only just passed is not moved to tomorrow"
+        );
     }
 }
