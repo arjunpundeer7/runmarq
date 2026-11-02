@@ -49,7 +49,7 @@ jobs:
         env:
           RUNMARQ_TARGET: ${{ matrix.target }}
       - name: Build and bundle
-        uses: tauri-apps/tauri-action@v0
+        uses: tauri-apps/tauri-action@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # macOS signing and notarization (optional; see docs/development/release.md)
