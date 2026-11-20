@@ -23,7 +23,7 @@
     "demo": "cargo run -q -p runmarq-collector --example demo_run > apps/web/content/demo-run.json"
   },
   "devDependencies": {
-    "turbo": "^2.11.10",
-    "typescript": "5.9.3"
+    "turbo": "^2.11.11",
+    "typescript": "7.0.2"
   }
 }
