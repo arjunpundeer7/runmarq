@@ -28,7 +28,7 @@ sha2.workspace = true
 tracing.workspace = true
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", features = ["Win32_System_Console", "Win32_Foundation"] }
+windows-sys = { version = "0.61", features = ["Win32_System_Console", "Win32_Foundation"] }
 
 [target.'cfg(unix)'.dependencies]
 libc = "0.2"
